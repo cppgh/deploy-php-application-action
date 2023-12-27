@@ -25,6 +25,9 @@ inputs:
   docker_hub_access_token:
     description: Docker Hub access token
     required: true
+  slack_webhook_url:
+    description: Slack webhook URL
+    required: true
   version_json_path:
     description: Path to write version.json
     required: true
@@ -102,3 +105,17 @@ runs:
         aws_region: us-west-2
         aws_access_key_id: ${{ inputs.aws_access_key_id }}
         aws_secret_access_key: ${{ inputs.aws_secret_access_key }}
+    - id: slack-payload
+      name: Generate Slack payload
+      if: always()
+      uses: cppgh/slack-payload-action@main
+      with:
+        job-status: ${{ job.status }}
+    - name: Notify Slack
+      if: always()
+      uses: slackapi/slack-github-action@v1.24.0
+      with:
+        payload: ${{ steps.slack-payload.outputs.payload }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ inputs.SLACK_WEBHOOK_URL }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
