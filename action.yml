@@ -7,6 +7,9 @@ inputs:
   service_name:
     description: Service name
     required: true
+  image:
+    description: ECR image
+    required: true
   task_definition:
     description: Task definition
     required: true
