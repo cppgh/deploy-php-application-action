@@ -1,0 +1,109 @@
+name: Deploy PHP application
+description: Deploy PHP application
+inputs:
+  cluster_name:
+    description: Cluster name
+    required: true
+  service_name:
+    description: Service name
+    required: true
+  task_definition:
+    description: Task definition
+    required: true
+  aws_region:
+    description: AWS region
+    required: true
+  aws_access_key_id:
+    description: AWS access key ID
+    required: true
+  aws_secret_access_key:
+    description: AWS secret access key
+    required: true
+  version_json_path:
+    description: Path to write version.json
+    required: true
+  sentry_release_path:
+    description: Path to write Sentry release information
+    required: true
+    default: ./.sentry_release
+  dockerfile_path:
+    description: Path to Dockerfile
+    required: true
+  build_target:
+    description: Docker build target
+  build_context:
+    description: Docker build context
+    required: true
+    default: .
+runs:
+  using: composite
+  steps:
+    - name: Install AWS CLI
+      run: sudo apt-get update && sudo apt-get install -y awscli
+    - id: short-sha
+      name: Generate short SHA
+      uses: cppgh/generate-short-sha-action@main
+    - id: build-version
+      name: Generate build version
+      uses: cppgh/generate-build-version-action@main
+      with:
+        sha: ${{ steps.short-sha.outputs.short-sha }}
+    - name: Log into Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+    - name: Log into AWS ECR image repository
+      uses: docker/login-action@v3
+      with:
+        registry: 662095312982.dkr.ecr.us-west-2.amazonaws.com
+        username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - name: Cache composer dependencies
+      uses: actions/cache@v3
+      with:
+        key: composer-production-${{ hashFiles('composer.lock') }}
+        restore-keys: composer-production-
+        path: ./vendor
+    - name: Install Composer dependencies
+      run: |
+        docker run --rm -v ${PWD}:/app -w /app composer:latest \
+          composer \
+            --no-dev \
+            --no-interaction \
+            --prefer-dist \
+            --ignore-platform-reqs \
+            --optimize-autoloader \
+            install
+    - name: Write version.json file
+      run: echo '${{ steps.build-version.outputs.version }}' > ${{ inputs.version_json_path }}
+    - name: Write git SHA to Sentry release
+      run: |
+        BUILD_DATE=`date "+%FT%H:%M:%S"`;echo "$BUILD_DATE-${{ steps.short-sha.outputs.short-sha }}" >> ${{ inputs.sentry_release_path }}
+    - name: Build PHP image
+      run: docker build -t ${{ inputs.image }} -f ${{ inputs.dockerfile_path }} --target ${{ inputs.build_target }} ${{ inputs.build_context }}
+    - name: Publish image
+      run: docker push ${{ inputs.image }}
+    - name: Update ECS service
+      uses: cppgh/update-ecs-service-action@main
+      with:
+        cluster_name: ${{ inputs.cluster_name }}
+        service_name: ${{ inputs.service_name }}
+        task_definition: ${{ inputs.task_definition }}
+        aws_region: us-west-2
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - id: slack-payload
+      name: Generate Slack payload
+      if: always()
+      uses: cppgh/slack-payload-action@main
+      with:
+        job-status: ${{ job.status }}
+    - name: Notify Slack
+      if: always()
+      uses: slackapi/slack-github-action@v1.24.0
+      with:
+        payload: ${{ steps.slack-payload.outputs.payload }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
