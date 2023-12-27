@@ -67,6 +67,7 @@ runs:
         restore-keys: composer-production-
         path: ./vendor
     - name: Install Composer dependencies
+      shell: bash
       run: |
         docker run --rm -v ${PWD}:/app -w /app composer:latest \
           composer \
@@ -77,13 +78,17 @@ runs:
             --optimize-autoloader \
             install
     - name: Write version.json file
+      shell: bash
       run: echo '${{ steps.build-version.outputs.version }}' > ${{ inputs.version_json_path }}
     - name: Write git SHA to Sentry release
+      shell: bash
       run: |
         BUILD_DATE=`date "+%FT%H:%M:%S"`;echo "$BUILD_DATE-${{ steps.short-sha.outputs.short-sha }}" >> ${{ inputs.sentry_release_path }}
     - name: Build PHP image
+      shell: bash
       run: docker build -t ${{ inputs.image }} -f ${{ inputs.dockerfile_path }} --target ${{ inputs.build_target }} ${{ inputs.build_context }}
     - name: Publish image
+      shell: bash
       run: docker push ${{ inputs.image }}
     - name: Update ECS service
       uses: cppgh/update-ecs-service-action@main
