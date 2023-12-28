@@ -72,6 +72,12 @@ runs:
         key: composer-production-${{ hashFiles('composer.lock') }}
         restore-keys: composer-production-
         path: ./vendor
+    - name: Cache npm dependencies
+      uses: actions/cache@v3
+      with:
+        key: npm-production-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-production-
+        path: ./node_modules
     - name: Install Composer dependencies
       shell: bash
       run: |
@@ -83,6 +89,12 @@ runs:
             --ignore-platform-reqs \
             --optimize-autoloader \
             install
+    - name: Install npm dependencies
+      if: ${{ hashFiles('package-lock.json') != '' }}
+      shell: bash
+      run: |
+        docker run --rm -v ${PWD}:/app -w /app node:latest \
+          npm install
     - name: Write version.json file
       shell: bash
       run: echo '${{ steps.build-version.outputs.version }}' > ${{ inputs.version_json_path }}
