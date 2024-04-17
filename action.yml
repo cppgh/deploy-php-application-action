@@ -46,9 +46,8 @@ inputs:
     default: .
   build_image:
     description: Rebuild image before deploying
-    type: boolean
     required: true
-    default: true
+    default: "true"
   pre_build_step:
     description: Command to run before building the image
     required: false
@@ -78,14 +77,14 @@ runs:
         username: ${{ inputs.aws_access_key_id }}
         password: ${{ inputs.aws_secret_access_key }}
     - name: Cache composer dependencies
-      if: ${{ inputs.build_image }}
+      if: ${{ inputs.build_image != "false" }}
       uses: actions/cache@v3
       with:
         key: composer-production-${{ hashFiles('composer.lock') }}
         restore-keys: composer-production-
         path: ./vendor
     - name: Install Composer dependencies
-      if: ${{ inputs.build_image }}
+      if: ${{ inputs.build_image != "false" }}
       shell: bash
       run: |
         docker run --rm -v ${PWD}:/app -w /app composer:latest \
@@ -97,28 +96,28 @@ runs:
             --optimize-autoloader \
             install
     - name: Write version.json file
-      if: ${{ inputs.build_image }}
+      if: ${{ inputs.build_image != "false" }}
       shell: bash
       run: echo '${{ steps.build-version.outputs.version }}' > ${{ inputs.version_json_path }}
     - name: Write git SHA to Sentry release
-      if: ${{ inputs.build_image }}
+      if: ${{ inputs.build_image != "false" }}
       shell: bash
       run: |
         BUILD_DATE=`date "+%FT%H:%M:%S"`;echo "$BUILD_DATE-${{ steps.short-sha.outputs.short-sha }}" >> ${{ inputs.sentry_release_path }}
     - name: Pre-build step
-      if: ${{ inputs.build_image && inputs.pre_build_step }}
+      if: ${{ inputs.build_image != "false" && inputs.pre_build_step }}
       shell: bash
       run: ${{ inputs.pre_build_step }}
     - name: Build PHP image
-      if: ${{ inputs.build_image }}
+      if: ${{ inputs.build_image != "false" }}
       shell: bash
       run: docker build -t ${{ inputs.image }} -f ${{ inputs.dockerfile_path }} --target ${{ inputs.build_target }} ${{ inputs.build_context }}
     - name: Post-build step
-      if: ${{ inputs.build_image && inputs.post_build_step }}
+      if: ${{ inputs.build_image != "false" && inputs.post_build_step }}
       shell: bash
       run: ${{ inputs.post_build_step }}
     - name: Publish image
-      if: ${{ inputs.build_image }}
+      if: ${{ inputs.build_image != "false" }}
       shell: bash
       run: docker push ${{ inputs.image }}
     - name: Update ECS service
