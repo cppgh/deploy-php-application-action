@@ -35,8 +35,6 @@ inputs:
     description: Path to write Sentry release information
     required: true
     default: ./.sentry_release
-  sentry_auth_token:
-    description: Sentry auth token
   dockerfile_path:
     description: Path to Dockerfile
     required: true
