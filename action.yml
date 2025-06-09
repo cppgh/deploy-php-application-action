@@ -48,6 +48,10 @@ inputs:
     description: Rebuild image before deploying
     required: true
     default: "true"
+  cache_composer:
+    description: Cache composer dependencies
+    required: true
+    default: "true"
   pre_build_step:
     description: Command to run before building the image
     required: false
@@ -77,7 +81,7 @@ runs:
         username: ${{ inputs.aws_access_key_id }}
         password: ${{ inputs.aws_secret_access_key }}
     - name: Cache composer dependencies
-      if: ${{ inputs.build_image != 'false' }}
+      if: ${{ inputs.build_image != 'false' && inputs.cache_composer != 'false' }}
       uses: actions/cache@v3
       with:
         key: composer-production-${{ hashFiles('composer.lock') }}
