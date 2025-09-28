@@ -44,6 +44,8 @@ inputs:
     description: Docker build context
     required: true
     default: .
+  composer_auth:
+    description: JSON with token for composer to authenticate to GitHub (for private repo dependencies)
   build_image:
     description: Rebuild image before deploying
     required: true
@@ -91,7 +93,7 @@ runs:
       if: ${{ inputs.build_image != 'false' }}
       shell: bash
       run: |
-        docker run --rm -v ${PWD}:/app -w /app composer:latest \
+        docker run --rm -e COMPOSER_AUTH="${{ inputs.composer_auth }}" -v ${PWD}:/app -w /app composer:latest \
           composer \
             --no-dev \
             --no-interaction \
