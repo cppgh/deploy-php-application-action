@@ -110,8 +110,7 @@ runs:
             install
     - name: Remove Composer auth
       shell: bash
-      run: |
-        rm -rf .composer
+      run: sudo rm -rf .composer
     - name: Write version.json file
       if: ${{ inputs.build_image != 'false' }}
       shell: bash
