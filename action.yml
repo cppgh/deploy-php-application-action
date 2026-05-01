@@ -100,17 +100,14 @@ runs:
       if: ${{ inputs.build_image != 'false' }}
       shell: bash
       run: |
-        docker run --rm -v ${PWD}:/app -w /app -e COMPOSER_HOME=/app/.composer sh -lc '
-          git config --global --add safe.directory "*"
-          composer:latest \
-            composer \
-              --no-dev \
-              --no-interaction \
-              --prefer-dist \
-              --ignore-platform-reqs \
-              --optimize-autoloader \
-              install
-        '
+        docker run --rm -v ${PWD}:/app -w /app -e COMPOSER_HOME=/app/.composer composer:latest \
+          composer \
+            --no-dev \
+            --no-interaction \
+            --prefer-dist \
+            --ignore-platform-reqs \
+            --optimize-autoloader \
+            install
     - name: Remove Composer auth
       shell: bash
       run: sudo rm -rf .composer
