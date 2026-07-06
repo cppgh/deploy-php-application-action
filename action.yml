@@ -84,7 +84,7 @@ runs:
         password: ${{ inputs.aws_secret_access_key }}
     - name: Cache composer dependencies
       if: ${{ inputs.build_image != 'false' && inputs.cache_composer != 'false' }}
-      uses: actions/cache@v3
+      uses: actions/cache@v6
       with:
         key: composer-production-${{ hashFiles('composer.lock') }}
         restore-keys: composer-production-
