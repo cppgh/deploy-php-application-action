@@ -153,7 +153,7 @@ runs:
         job-status: ${{ job.status }}
     - name: Notify Slack
       if: always()
-      uses: slackapi/slack-github-action@v3
+      uses: slackapi/slack-github-action@v4
       with:
         webhook: ${{ inputs.slack_webhook_url }}
         webhook-type: incoming-webhook
