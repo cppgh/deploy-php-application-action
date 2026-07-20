@@ -148,7 +148,7 @@ runs:
     - id: slack-payload
       name: Generate Slack payload
       if: always()
-      uses: cppgh/slack-payload-action@v2
+      uses: cppgh/slack-payload-action@v4
       with:
         job-status: ${{ job.status }}
     - name: Notify Slack
